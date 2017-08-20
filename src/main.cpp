@@ -199,7 +199,7 @@ int main() {
   }
 
   int lane = 1;
-  double ref_vel = 49.5; //mph
+  double ref_vel = 0.0; //49.5; //mph
 
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy, &lane, &ref_vel](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                                                                                                        uWS::OpCode opCode) {
@@ -236,7 +236,8 @@ int main() {
           double end_path_d = j[1]["end_path_d"];
 
           // Sensor Fusion Data, a list of all other cars on the same side of the road.
-          auto sensor_fusion = j[1]["sensor_fusion"];
+//          auto sensor_fusion = j[1]["sensor_fusion"];
+          vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
 
           json msgJson;
 
@@ -249,6 +250,42 @@ int main() {
 //          double angle;
 //
           size_t prev_path_size = previous_path_x.size();
+
+          if (prev_path_size > 0) {
+            car_s = end_path_s;
+          }
+
+          bool too_close = false;
+          // find ref_v to use
+
+          for (int i = 0; i < sensor_fusion.size(); ++i) {
+            float d = sensor_fusion[i][6];
+            if (d < (2 + 4*lane + 2) && d > (2 + 4*lane - 2)) {
+
+              double vx = sensor_fusion[i][3];
+              double vy = sensor_fusion[i][4];
+              double check_speed = sqrt(vx*vx + vy*vy);
+              double check_car_s = sensor_fusion[i][5];
+
+              check_car_s += (double)prev_path_size * 0.02 * check_speed;
+
+              if (check_car_s > car_s && (check_car_s - car_s) < 30) {
+//                ref_vel = 29.5; // mph
+                cout << "there is a collision with car : " << i << endl;
+                too_close = true;
+
+                if (lane > 0) {
+                  lane -= 1;
+                }
+              }
+            }
+          }
+
+          if (too_close) {
+            ref_vel -= 0.224;
+          } else if (ref_vel < 49.5) {
+            ref_vel += 0.224;
+          }
 
           // transforming to car coordinates
 //          for (int i = 0; i < ptsx.size(); ++i) {
