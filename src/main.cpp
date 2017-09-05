@@ -9,6 +9,7 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
 #include "spline.h"
+#include "cost-functions.h"
 
 using namespace std;
 
@@ -46,7 +47,7 @@ int ClosestWaypoint(double x, double y, vector<double> maps_x, vector<double> ma
   double closestLen = 100000; //large number
   int closestWaypoint = 0;
 
-  for(int i = 0; i < maps_x.size(); i++)
+  for(size_t i = 0; i < maps_x.size(); i++)
   {
     double map_x = maps_x[i];
     double map_y = maps_y[i];
@@ -56,7 +57,6 @@ int ClosestWaypoint(double x, double y, vector<double> maps_x, vector<double> ma
       closestLen = dist;
       closestWaypoint = i;
     }
-
   }
 
   return closestWaypoint;
@@ -202,7 +202,7 @@ int main() {
   double ref_vel = 0.0; //49.5; //mph
 
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy, &lane, &ref_vel](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-                                                                                                       uWS::OpCode opCode) {
+                                                                                                                        uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -236,8 +236,7 @@ int main() {
           double end_path_d = j[1]["end_path_d"];
 
           // Sensor Fusion Data, a list of all other cars on the same side of the road.
-//          auto sensor_fusion = j[1]["sensor_fusion"];
-          vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
+          auto sensor_fusion = j[1]["sensor_fusion"];
 
           json msgJson;
 
@@ -245,20 +244,69 @@ int main() {
           vector<double> next_y_vals;
 
           // TODO
-//          double pos_x;
-//          double pos_y;
-//          double angle;
-//
+          //lane = (int)(car_d / 4.0);
+
           size_t prev_path_size = previous_path_x.size();
 
           if (prev_path_size > 0) {
             car_s = end_path_s;
           }
 
+          // here we take sensor fussion data
+          // to build up relevant information for computing cost of each line.
+
+          vector<double> distance_to_closest(3, std::numeric_limits<double>::max());
+          vector<double> distance_to_closest_ahead(3, std::numeric_limits<double>::max());
+          vector<double> vel_of_closest(3, std::numeric_limits<double>::max());
+          vector<int> car_ids(3, -1);
+
+          for (size_t i = 0; i < sensor_fusion.size(); ++i) {
+            int other_car_id = sensor_fusion[i][0];
+            float other_d = sensor_fusion[i][6];
+            int other_car_lane = (int)(other_d / 4.0);
+            int other_car_s = sensor_fusion[i][5];
+
+            double vx = sensor_fusion[i][3];
+            double vy = sensor_fusion[i][4];
+            double other_car_vel = sqrt(vx*vx + vy*vy);
+
+            // update car position to current state
+            other_car_s += (double)prev_path_size * 0.02 * other_car_vel;
+
+            double diff_in_s = other_car_s - car_s;
+            double diff_abs = fabs(diff_in_s);
+
+            if (diff_abs < distance_to_closest[other_car_lane]) {
+              distance_to_closest[other_car_lane] = diff_abs;
+            }
+
+            if (diff_in_s < 0.0) {
+              continue;
+            }
+
+            if (diff_in_s < distance_to_closest_ahead[other_car_lane]) {
+              distance_to_closest_ahead[other_car_lane] = diff_in_s;
+              vel_of_closest[other_car_lane] = other_car_vel;
+              car_ids[other_car_lane] = other_car_id;
+            }
+            // check if this car is the closses we have at its lane
+          }
+
+//          for (int i = 0; i < 3 ; i++) {
+//            std::cout << "(" << i << ", " << car_ids[i]  << ", " << distance_to_closest[i] << ", " << vel_of_closest[i] << "),";
+//          }
+//          std::cout << endl;
+
+          lane = best_lane(lane,
+                           distance_to_closest,
+                           distance_to_closest_ahead,
+                           vel_of_closest,
+                           car_ids);
+
           bool too_close = false;
           // find ref_v to use
 
-          for (int i = 0; i < sensor_fusion.size(); ++i) {
+          for (size_t i = 0; i < sensor_fusion.size(); ++i) {
             float d = sensor_fusion[i][6];
             if (d < (2 + 4*lane + 2) && d > (2 + 4*lane - 2)) {
 
@@ -269,14 +317,12 @@ int main() {
 
               check_car_s += (double)prev_path_size * 0.02 * check_speed;
 
-              if (check_car_s > car_s && (check_car_s - car_s) < 30) {
-//                ref_vel = 29.5; // mph
-                cout << "there is a collision with car : " << i << endl;
+              if (check_car_s > car_s && (check_car_s - car_s) < 20) {
                 too_close = true;
 
-                if (lane > 0) {
-                  lane -= 1;
-                }
+//                if (lane > 0) {
+//                  lane -= 1;
+//                }
               }
             }
           }
@@ -287,32 +333,33 @@ int main() {
             ref_vel += 0.224;
           }
 
+          std::cout << "ref_vel: " << ref_vel << endl;
           // transforming to car coordinates
-//          for (int i = 0; i < ptsx.size(); ++i) {
-//            double diff_x = ptsx[i] - px;
-//            double diff_y = ptsy[i] - py;
-//            ptsx[i] = diff_x * cos(-psi) - diff_y * sin(-psi);
-//            ptsy[i] = diff_x * sin(-psi) + diff_y * cos(-psi);
-//          }
-//
-//          for(int i = 0; i < prev_path_size; i++)
-//          {
-//            next_x_vals.push_back(previous_path_x[i]);
-//            next_y_vals.push_back(previous_path_y[i]);
-//          }
-//
-//          if (prev_path_size == 0) {
-//            pos_x = car_x;
-//            pos_y = car_y;
-//            angle = deg2rad(car_yaw);
-//          } else {
-//            pos_x = previous_path_x[prev_path_size - 1];
-//            pos_y = previous_path_y[prev_path_size - 1];
-//            double pos_x2 = previous_path_x[prev_path_size - 2];
-//            double pos_y2 = previous_path_y[prev_path_size - 2];
-//
-//            angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
-//          }
+          //          for (int i = 0; i < ptsx.size(); ++i) {
+          //            double diff_x = ptsx[i] - px;
+          //            double diff_y = ptsy[i] - py;
+          //            ptsx[i] = diff_x * cos(-psi) - diff_y * sin(-psi);
+          //            ptsy[i] = diff_x * sin(-psi) + diff_y * cos(-psi);
+          //          }
+          //
+          //          for(int i = 0; i < prev_path_size; i++)
+          //          {
+          //            next_x_vals.push_back(previous_path_x[i]);
+          //            next_y_vals.push_back(previous_path_y[i]);
+          //          }
+          //
+          //          if (prev_path_size == 0) {
+          //            pos_x = car_x;
+          //            pos_y = car_y;
+          //            angle = deg2rad(car_yaw);
+          //          } else {
+          //            pos_x = previous_path_x[prev_path_size - 1];
+          //            pos_y = previous_path_y[prev_path_size - 1];
+          //            double pos_x2 = previous_path_x[prev_path_size - 2];
+          //            double pos_y2 = previous_path_y[prev_path_size - 2];
+          //
+          //            angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
+          //          }
 
           vector<double> ptsx;
           vector<double> ptsy;
@@ -356,7 +403,7 @@ int main() {
             ptsy.push_back(next_wp[1]);
           }
 
-          for (int i = 0; i < ptsx.size(); i++) {
+          for (size_t i = 0; i < ptsx.size(); i++) {
             double shift_x = ptsx[i] - ref_x;
             double shift_y = ptsy[i] - ref_y;
 
@@ -368,7 +415,7 @@ int main() {
 
           s.set_points(ptsx, ptsy);
 
-          for (int i = 0; i < prev_path_size; i++) {
+          for (size_t i = 0; i < prev_path_size; i++) {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);
           }
@@ -382,7 +429,7 @@ int main() {
           double x_add_on = 0;
           double N = target_dist/(0.02 * ref_vel / 2.24);
 
-          for (int i = 1; i <= 50 - prev_path_size; i++) {
+          for (int i = 1; i <= 30 - prev_path_size; i++) {
             double x_point = x_add_on + target_x/N;
             double y_point = s(x_point);
 
@@ -401,24 +448,24 @@ int main() {
             next_y_vals.push_back(y_point);
           }
 
-//          double dist_inc = 0.4;
-//          for(int i = 0; i < 50; i++)
-//          {
-//            double next_s = car_s + (dist_inc * i + 1);
-//            double next_d = 6; // each lane is 4 mts.
-//
-//            auto next_x_y = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-//
-//            next_x_vals.push_back(next_x_y[0]);
-//            next_y_vals.push_back(next_x_y[1]);
-//
-////            next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
-////            next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
-//          }
-//
-////          for (int car_id = 0; car_id < sensor_fusion.size(); ++car_id) {
-////            cout << car_id << " : " << sensor_fusion.at(car_id).size() << endl;
-////          }
+          //          double dist_inc = 0.4;
+          //          for(int i = 0; i < 50; i++)
+          //          {
+          //            double next_s = car_s + (dist_inc * i + 1);
+          //            double next_d = 6; // each lane is 4 mts.
+          //
+          //            auto next_x_y = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+          //
+          //            next_x_vals.push_back(next_x_y[0]);
+          //            next_y_vals.push_back(next_x_y[1]);
+          //
+          ////            next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
+          ////            next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
+          //          }
+          //
+          ////          for (int car_id = 0; car_id < sensor_fusion.size(); ++car_id) {
+          ////            cout << car_id << " : " << sensor_fusion.at(car_id).size() << endl;
+          ////          }
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
@@ -431,12 +478,13 @@ int main() {
         }
       } else {
         // Manual driving
+        cout << "WFT\n";
         std::string msg = "42[\"manual\",{}]";
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       }
     }
   });
-
+  
   // We don't need this since we're not using HTTP but if it's removed the
   // program
   // doesn't compile :-(
@@ -450,17 +498,17 @@ int main() {
       res->end(nullptr, 0);
     }
   });
-
+  
   h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
     std::cout << "Connected!!!" << std::endl;
   });
-
+  
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code,
                          char *message, size_t length) {
     ws.close();
     std::cout << "Disconnected" << std::endl;
   });
-
+  
   int port = 4567;
   if (h.listen(port)) {
     std::cout << "Listening to port " << port << std::endl;

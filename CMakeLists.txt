@@ -4,10 +4,9 @@ cmake_minimum_required (VERSION 3.5)
 
 add_definitions(-std=c++11)
 
-set(CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
+add_compile_options(-Wall -Wextra -Wpedantic)
 
-set(sources src/main.cpp)
+set(sources src/main.cpp src/cost-functions.cpp)
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
