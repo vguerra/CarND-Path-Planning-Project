@@ -8,8 +8,8 @@ using namespace std;
 
 // Constante weights for each of the cost functions
 const double Cost_epsilon = 2;
-const double Cost_change_of_lane = 5;
-const double Cost_closest_car = 15;
+const double Cost_change_of_lane = 4;
+const double Cost_closest_car = 18;
 const double Cost_slowest_car = 8;
 const double Cost_colission = 100;
 
@@ -77,8 +77,10 @@ int compute_best_lane(int current_lane,
   int best_lane = lane_options[best_lane_index];
   double best_cost = cost_per_lane[best_lane_index];
 
-  cout << "current_lane: " << current_lane << ", choosing lane: " << best_lane << endl;
+  int return_lane = fabs(current_cost - best_cost) < Cost_epsilon ? current_lane : best_lane;
 
-  return fabs(current_cost - best_cost) < Cost_epsilon ? current_lane : best_lane;
+  cout << "current_lane: " << current_lane << ", choosing lane: " << return_lane << endl;
+
+  return return_lane;
 }
 
