@@ -509,25 +509,6 @@ int main() {
             next_y_vals.push_back(y_point);
           }
 
-          //          double dist_inc = 0.4;
-          //          for(int i = 0; i < 50; i++)
-          //          {
-          //            double next_s = car_s + (dist_inc * i + 1);
-          //            double next_d = 6; // each lane is 4 mts.
-          //
-          //            auto next_x_y = getXY(next_s, next_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-          //
-          //            next_x_vals.push_back(next_x_y[0]);
-          //            next_y_vals.push_back(next_x_y[1]);
-          //
-          ////            next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
-          ////            next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
-          //          }
-          //
-          ////          for (int car_id = 0; car_id < sensor_fusion.size(); ++car_id) {
-          ////            cout << car_id << " : " << sensor_fusion.at(car_id).size() << endl;
-          ////          }
-
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
 
