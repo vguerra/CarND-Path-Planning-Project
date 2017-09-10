@@ -161,6 +161,44 @@ vector<double> getXY(double s, double d, vector<double> maps_s, vector<double> m
 
 }
 
+bool lane_change_is_feaseble(int current_lane,
+                             double car_s,
+                             double car_vel,
+                             int best_lane,
+                             int car_ids_closest,
+                             const vector<vector<double>>& sensor_data) {
+
+  // no change of lane
+  if (current_lane == best_lane)
+    return true;
+
+  // no car that could cause a collision
+  if (car_ids_closest == -1)
+    return true;
+
+  const vector<double>& car_data = sensor_data[car_ids_closest];
+
+  int other_car_s = car_data[5];
+  double vx = car_data[3];
+  double vy = car_data[4];
+  double other_car_vel = sqrt(vx*vx + vy*vy);
+
+  // we check for collisions in the future
+  for (int i = 0; i < 30; i++) {
+    other_car_s += (double)i * 0.02 * other_car_vel;
+    car_s += (double)i * 0.02 * car_vel;
+
+    if (fabs(other_car_s - car_s) <  2 * Car_radius) {
+      cout << "COLISSION IN THE FUTUREEE!!!!!! ... ABORTTT!!!! " << i << endl;
+      return false;
+    }
+  }
+
+  cout << "THERE WAS A CAR BUT NO DANGER! ;) " << endl;
+
+  return true;
+}
+
 int main() {
   uWS::Hub h;
 
@@ -236,7 +274,7 @@ int main() {
           double end_path_d = j[1]["end_path_d"];
 
           // Sensor Fusion Data, a list of all other cars on the same side of the road.
-          auto sensor_fusion = j[1]["sensor_fusion"];
+          vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
 
           json msgJson;
 
@@ -258,12 +296,18 @@ int main() {
           vector<double> distance_to_closest(3, std::numeric_limits<double>::max());
           vector<double> distance_to_closest_ahead(3, std::numeric_limits<double>::max());
           vector<double> vel_of_closest(3, std::numeric_limits<double>::max());
-          vector<int> car_ids(3, -1);
+          vector<int> car_ids_closest(3, -1);
 
           for (size_t i = 0; i < sensor_fusion.size(); ++i) {
             int other_car_id = sensor_fusion[i][0];
             float other_d = sensor_fusion[i][6];
             int other_car_lane = (int)(other_d / 4.0);
+
+            if (other_car_lane < 0 || other_car_lane > 2) {
+              continue;
+            }
+
+
             int other_car_s = sensor_fusion[i][5];
 
             double vx = sensor_fusion[i][3];
@@ -278,6 +322,7 @@ int main() {
 
             if (diff_abs < distance_to_closest[other_car_lane]) {
               distance_to_closest[other_car_lane] = diff_abs;
+              car_ids_closest[other_car_lane] = other_car_id;
             }
 
             if (diff_in_s < 0.0) {
@@ -287,21 +332,28 @@ int main() {
             if (diff_in_s < distance_to_closest_ahead[other_car_lane]) {
               distance_to_closest_ahead[other_car_lane] = diff_in_s;
               vel_of_closest[other_car_lane] = other_car_vel;
-              car_ids[other_car_lane] = other_car_id;
             }
             // check if this car is the closses we have at its lane
           }
 
-//          for (int i = 0; i < 3 ; i++) {
-//            std::cout << "(" << i << ", " << car_ids[i]  << ", " << distance_to_closest[i] << ", " << vel_of_closest[i] << "),";
-//          }
-//          std::cout << endl;
+          //          for (int i = 0; i < 3 ; i++) {
+          //            std::cout << "(" << i << ", " << car_ids[i]  << ", " << distance_to_closest[i] << ", " << vel_of_closest[i] << "),";
+          //          }
+          //          std::cout << endl;
 
-          lane = best_lane(lane,
-                           distance_to_closest,
-                           distance_to_closest_ahead,
-                           vel_of_closest,
-                           car_ids);
+          int best_lane = compute_best_lane(lane,
+                                            distance_to_closest,
+                                            distance_to_closest_ahead,
+                                            vel_of_closest);
+
+          if (lane_change_is_feaseble(lane,
+                                      car_s,
+                                      ref_vel,
+                                      best_lane,
+                                      car_ids_closest[best_lane],
+                                      sensor_fusion)) {
+            lane = best_lane;
+          }
 
           bool too_close = false;
           // find ref_v to use
@@ -320,9 +372,9 @@ int main() {
               if (check_car_s > car_s && (check_car_s - car_s) < 20) {
                 too_close = true;
 
-//                if (lane > 0) {
-//                  lane -= 1;
-//                }
+                //                if (lane > 0) {
+                //                  lane -= 1;
+                //                }
               }
             }
           }
@@ -484,7 +536,7 @@ int main() {
       }
     }
   });
-  
+
   // We don't need this since we're not using HTTP but if it's removed the
   // program
   // doesn't compile :-(

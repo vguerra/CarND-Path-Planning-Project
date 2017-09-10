@@ -10,13 +10,11 @@ using namespace std;
 const double Cost_epsilon = 2;
 const double Cost_change_of_lane = 5;
 const double Cost_closest_car = 15;
-const double Cost_slowest_car = 10;
+const double Cost_slowest_car = 8;
 const double Cost_colission = 100;
 
 const double Max_distance = 100.0;
 const double Max_velocity = 80.0;
-
-const double Car_radius = 1.5;
 
 // For each lane, the possible lanes we can transition to ( including the lane itself ).
 const vector<vector<int>> LaneOptions = {
@@ -42,12 +40,10 @@ double colission(double absolute_distance_to_car) {
   return (colides ? 1.0 : 0.0);
 }
 
-int best_lane(int current_lane,
-              const vector<double>& distance_to_closest,
-              const vector<double>& distance_to_closest_ahead,
-              const vector<double>& vel_of_closest,
-              const vector<int>& car_ids) {
-
+int compute_best_lane(int current_lane,
+                      const vector<double>& distance_to_closest,
+                      const vector<double>& distance_to_closest_ahead,
+                      const vector<double>& vel_of_closest) {
   auto& lane_options = LaneOptions[current_lane];
 
   vector<double> cost_per_lane(lane_options.size(), 0.0);
@@ -66,9 +62,9 @@ int best_lane(int current_lane,
     cost_per_lane[lane_index] = cost_change_of_lane + cost_closes_car + cost_slowest_car + cost_colission;
 
     cout << possible_lane << " : " << cost_change_of_lane << " + " \
-      << cost_closes_car << " + " \
-      << cost_slowest_car << " + " \
-      << cost_colission << " = " << cost_per_lane[lane_index] << ", ";
+    << cost_closes_car << " + " \
+    << cost_slowest_car << " + " \
+    << cost_colission << " = " << cost_per_lane[lane_index] << ", ";
 
     if (current_lane == possible_lane) {
       current_cost = cost_per_lane[lane_index];
