@@ -219,7 +219,7 @@ int main() {
   // Waypoint map to read from
   string map_file_ = "../../data/highway_map.csv";
   // The max s value before wrapping around the track back to 0
-  double max_s = 6945.554;
+  // double max_s = 6945.554;
 
   ifstream in_map_(map_file_.c_str(), ifstream::in);
 
@@ -278,7 +278,7 @@ int main() {
           auto previous_path_y = j[1]["previous_path_y"];
           // Previous path's end s and d values
           double end_path_s = j[1]["end_path_s"];
-          double end_path_d = j[1]["end_path_d"];
+//          double end_path_d = j[1]["end_path_d"];
 
           // Sensor Fusion Data, a list of all other cars on the same side of the road.
           vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
@@ -288,9 +288,6 @@ int main() {
           vector<double> next_x_vals;
           vector<double> next_y_vals;
 
-          // TODO
-          //lane = (int)(car_d / 4.0);
-
           size_t prev_path_size = previous_path_x.size();
 
           if (prev_path_size > 0) {
@@ -299,7 +296,6 @@ int main() {
 
           // here we take sensor fussion data
           // to build up relevant information for computing cost of each line.
-
           vector<double> distance_to_closest(3, std::numeric_limits<double>::max());
           vector<double> distance_to_closest_ahead(3, std::numeric_limits<double>::max());
           vector<double> vel_of_closest(3, std::numeric_limits<double>::max());
@@ -342,13 +338,7 @@ int main() {
               distance_to_closest_ahead[other_car_lane] = diff_in_s;
               vel_of_closest[other_car_lane] = other_car_vel;
             }
-            // check if this car is the closses we have at its lane
           }
-
-          //          for (int i = 0; i < 3 ; i++) {
-          //            std::cout << "(" << i << ", " << car_ids[i]  << ", " << distance_to_closest[i] << ", " << vel_of_closest[i] << "),";
-          //          }
-          //          std::cout << endl;
 
           int best_lane = compute_best_lane(lane,
                                             distance_to_closest,
@@ -365,8 +355,8 @@ int main() {
           }
 
           bool too_close = false;
-          // find ref_v to use
 
+          // find ref_v to use
           for (size_t i = 0; i < sensor_fusion.size(); ++i) {
             float d = sensor_fusion[i][6];
             if (d < (2 + 4*lane + 2) && d > (2 + 4*lane - 2)) {
@@ -380,10 +370,6 @@ int main() {
 
               if (check_car_s > car_s && (check_car_s - car_s) < 20) {
                 too_close = true;
-
-                //                if (lane > 0) {
-                //                  lane -= 1;
-                //                }
               }
             }
           }
@@ -395,32 +381,6 @@ int main() {
           }
 
           std::cout << "ref_vel: " << ref_vel << endl;
-          // transforming to car coordinates
-          //          for (int i = 0; i < ptsx.size(); ++i) {
-          //            double diff_x = ptsx[i] - px;
-          //            double diff_y = ptsy[i] - py;
-          //            ptsx[i] = diff_x * cos(-psi) - diff_y * sin(-psi);
-          //            ptsy[i] = diff_x * sin(-psi) + diff_y * cos(-psi);
-          //          }
-          //
-          //          for(int i = 0; i < prev_path_size; i++)
-          //          {
-          //            next_x_vals.push_back(previous_path_x[i]);
-          //            next_y_vals.push_back(previous_path_y[i]);
-          //          }
-          //
-          //          if (prev_path_size == 0) {
-          //            pos_x = car_x;
-          //            pos_y = car_y;
-          //            angle = deg2rad(car_yaw);
-          //          } else {
-          //            pos_x = previous_path_x[prev_path_size - 1];
-          //            pos_y = previous_path_y[prev_path_size - 1];
-          //            double pos_x2 = previous_path_x[prev_path_size - 2];
-          //            double pos_y2 = previous_path_y[prev_path_size - 2];
-          //
-          //            angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
-          //          }
 
           vector<double> ptsx;
           vector<double> ptsy;
@@ -481,7 +441,6 @@ int main() {
             next_y_vals.push_back(previous_path_y[i]);
           }
 
-
           double target_x = 30.0;
           double target_y = s(target_x);
 
@@ -490,7 +449,7 @@ int main() {
           double x_add_on = 0;
           double N = target_dist/(0.02 * ref_vel / 2.24);
 
-          for (int i = 1; i <= 30 - prev_path_size; i++) {
+          for (size_t i = 1; i <= 30 - prev_path_size; i++) {
             double x_point = x_add_on + target_x/N;
             double y_point = s(x_point);
 
