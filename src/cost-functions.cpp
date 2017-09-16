@@ -21,33 +21,40 @@ const vector<vector<int>> LaneOptions = {
   {0, 1}, {0, 1, 2}, {1, 2}
 };
 
+// The further the lane the less costly.
 double change_of_lane(int current_lane, int goal_lane) {
   return pow(current_lane - goal_lane, 2);
 }
 
-// the closest the car, the higher the cost (value between 0 and 1)
+// The closest the car, the higher the cost
+// returns value between 0 and 1.
 double closest_car(double distance_to_car) {
   return (Max_distance - min(Max_distance, distance_to_car))/Max_distance;
 }
 
-// the slower the car, the higher the cost
+// The slower the car, the higher the cost
+// returns value between 0 and 1.
 double slowest_car(double vel_of_car) {
   return (Max_velocity - min(Max_velocity, vel_of_car))/Max_velocity;
 }
 
+// Binary cost function: If there is a collision
+// returns 0 or 1.
 double colission(double absolute_distance_to_car) {
   bool colides = (absolute_distance_to_car < 2 * Car_radius);
   return (colides ? 1.0 : 0.0);
 }
 
+// Computes what's the best lane is depending on cost's of
+// lane options.
+// Returns number of lane to use: 0, 1 or 2.
 int compute_best_lane(int current_lane,
                       const vector<double>& distance_to_closest,
                       const vector<double>& distance_to_closest_ahead,
                       const vector<double>& vel_of_closest) {
+
   auto& lane_options = LaneOptions[current_lane];
-
   vector<double> cost_per_lane(lane_options.size(), 0.0);
-
   double current_cost = 0.0;
 
   // cost of changing line
