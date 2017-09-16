@@ -300,6 +300,7 @@ int main() {
           vector<double> distance_to_closest_ahead(3, std::numeric_limits<double>::max());
           vector<double> vel_of_closest(3, std::numeric_limits<double>::max());
           vector<int> car_ids_closest(3, -1);
+          vector<int> car_ids_closest_ahead(3, -1);
           vector<vector<int>> car_ids_per_line(3, vector<int>());
 
           for (size_t i = 0; i < sensor_fusion.size(); ++i) {
@@ -337,6 +338,7 @@ int main() {
             if (diff_in_s < distance_to_closest_ahead[other_car_lane]) {
               distance_to_closest_ahead[other_car_lane] = diff_in_s;
               vel_of_closest[other_car_lane] = other_car_vel;
+              car_ids_closest_ahead[other_car_lane] = other_car_id;
             }
           }
 
@@ -355,22 +357,16 @@ int main() {
           }
 
           bool too_close = false;
+          // checking if we need to slow down or speed up.
+          if (car_ids_closest_ahead[lane] != -1) {
+            int other_car_id = car_ids_closest_ahead[lane];
+            double check_speed = vel_of_closest[lane];
+            double check_car_s = sensor_fusion[other_car_id][5];
 
-          // find ref_v to use
-          for (size_t i = 0; i < sensor_fusion.size(); ++i) {
-            float d = sensor_fusion[i][6];
-            if (d < (2 + 4*lane + 2) && d > (2 + 4*lane - 2)) {
+            check_car_s += (double)prev_path_size * 0.02 * check_speed;
 
-              double vx = sensor_fusion[i][3];
-              double vy = sensor_fusion[i][4];
-              double check_speed = sqrt(vx*vx + vy*vy);
-              double check_car_s = sensor_fusion[i][5];
-
-              check_car_s += (double)prev_path_size * 0.02 * check_speed;
-
-              if (check_car_s > car_s && (check_car_s - car_s) < 20) {
-                too_close = true;
-              }
+            if (check_car_s > car_s && (check_car_s - car_s) < 20) {
+              too_close = true;
             }
           }
 
@@ -379,8 +375,6 @@ int main() {
           } else if (ref_vel < 49.5) {
             ref_vel += 0.224;
           }
-
-          std::cout << "ref_vel: " << ref_vel << endl;
 
           vector<double> ptsx;
           vector<double> ptsy;
@@ -417,6 +411,7 @@ int main() {
 
           }
 
+          // Generating 3 points that are the base for the spline
           for (int i = 0; i < 3; ++i) {
             vector<double> next_wp = getXY(car_s + 30*(i + 1), (2 + 4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
@@ -424,6 +419,7 @@ int main() {
             ptsy.push_back(next_wp[1]);
           }
 
+          // Converting points to local car coordinates
           for (size_t i = 0; i < ptsx.size(); i++) {
             double shift_x = ptsx[i] - ref_x;
             double shift_y = ptsy[i] - ref_y;
@@ -449,6 +445,8 @@ int main() {
           double x_add_on = 0;
           double N = target_dist/(0.02 * ref_vel / 2.24);
 
+
+          // Computing next points to put into our trajectory.
           for (size_t i = 1; i <= 30 - prev_path_size; i++) {
             double x_point = x_add_on + target_x/N;
             double y_point = s(x_point);
