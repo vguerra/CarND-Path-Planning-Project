@@ -6,7 +6,7 @@ add_definitions(-std=c++11)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 
-set(sources src/main.cpp src/cost-functions.cpp)
+set(sources src/main.cpp src/cost-functions.cpp src/helpers.cpp src/paths.cpp)
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 

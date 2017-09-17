@@ -21,6 +21,18 @@ Here I will consider the rubric points individually and describe how I addressed
 
 ### Code
 
+The project is organized as follows:
+* `src` folder containing all source code of the project. Containing:
+    - `main.cpp`: Main workflow of comunication between path planning generator and simulator.
+    - `calibration.py`: Implementation of calibration of car's camera.
+    - `colorthreshold.py`: Threshold of color and gradient for images.
+    - `line.py`: Class that encapsulates all information about found Lanes.
+    - `linefinder.py` : Implements the algorithm to find lanes.
+    - `transform.py` : Perspective transformation implementation.
+    - `config.py`: Configuration parameters for the entire pipeline.
+    - `util.py`: Utilities for parsing command line arguments and debugging.
+
+
 ---
 
 ### Path Planning
