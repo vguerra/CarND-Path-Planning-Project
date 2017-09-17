@@ -356,8 +356,9 @@ int main() {
             lane = best_lane;
           }
 
-          bool too_close = false;
+
           // checking if we need to slow down or speed up.
+          bool too_close = false;
           if (car_ids_closest_ahead[lane] != -1) {
             int other_car_id = car_ids_closest_ahead[lane];
             double check_speed = vel_of_closest[lane];
@@ -383,6 +384,11 @@ int main() {
           double ref_y = car_y;
           double ref_yaw = deg2rad(car_yaw);
 
+          // Taking into account points from previous
+          // path ( 2 points )
+
+          // In case we receive less than 2 points,
+          // we infeer previous car position.
           if (prev_path_size < 2) {
             double prev_car_x = car_x - cos(car_yaw);
             double prev_car_y = car_y - sin(car_yaw);
@@ -394,7 +400,8 @@ int main() {
             ptsy.push_back(car_y);
 
           } else {
-
+            // we have enough points, we take only the last 2.
+            
             ref_x = previous_path_x[prev_path_size - 1];
             ref_y = previous_path_y[prev_path_size - 1];
 
@@ -411,7 +418,7 @@ int main() {
 
           }
 
-          // Generating 3 points that are the base for the spline
+          // Generating extra 3 points that are the base for the spline
           for (int i = 0; i < 3; ++i) {
             vector<double> next_wp = getXY(car_s + 30*(i + 1), (2 + 4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
@@ -437,6 +444,8 @@ int main() {
             next_y_vals.push_back(previous_path_y[i]);
           }
 
+          // Extracting points of the splice, using a distance
+          // based on ref_vel that will define car's velocity on simulator.
           double target_x = 30.0;
           double target_y = s(target_x);
 
@@ -451,8 +460,8 @@ int main() {
             double x_point = x_add_on + target_x/N;
             double y_point = s(x_point);
 
+            // converting back points to map's coordinates.
             x_add_on = x_point;
-
             double x_ref = x_point;
             double y_ref = y_point;
 
