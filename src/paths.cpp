@@ -99,15 +99,13 @@ pp_sensor_data preprocess_sensor_data(const vector<vector<double>>& sensor_fusio
     }
   }
 
-  pp_sensor_data pp_data;
-
-  pp_data.distance_to_closest = distance_to_closest;
-  pp_data.distance_to_closest_ahead = distance_to_closest_ahead;
-  pp_data.vel_of_closest = vel_of_closest;
-  pp_data.car_ids_closest = car_ids_closest;
-  pp_data.car_ids_closest_ahead = car_ids_closest_ahead;
-  pp_data.car_ids_per_line = car_ids_per_line;
-
-  return pp_data;
+  return {
+    distance_to_closest,
+    distance_to_closest_ahead,
+    vel_of_closest,
+    car_ids_closest,
+    car_ids_closest_ahead,
+    car_ids_per_line,
+  };
 }
 
