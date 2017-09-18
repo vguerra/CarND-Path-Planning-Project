@@ -45,7 +45,69 @@ bool lane_change_is_feaseble(int current_lane,
   }
 
   cout << "THERE WAS A CAR BUT NO DANGER! ;) " << endl;
-  
+
   return true;
+}
+
+pp_sensor_data preprocess_sensor_data(const vector<vector<double>>& sensor_fusion,
+                                      size_t prev_path_size,
+                                      double car_s) {
+
+  vector<double> distance_to_closest(3, std::numeric_limits<double>::max());
+  vector<double> distance_to_closest_ahead(3, std::numeric_limits<double>::max());
+  vector<double> vel_of_closest(3, std::numeric_limits<double>::max());
+  vector<int> car_ids_closest(3, -1);
+  vector<int> car_ids_closest_ahead(3, -1);
+  vector<vector<int>> car_ids_per_line(3, vector<int>());
+
+  for (size_t i = 0; i < sensor_fusion.size(); ++i) {
+    int other_car_id = sensor_fusion[i][0];
+    float other_d = sensor_fusion[i][6];
+    int other_car_lane = (int)(other_d / 4.0);
+
+    if (other_car_lane < 0 || other_car_lane > 2) {
+      continue;
+    }
+
+    car_ids_per_line[other_car_lane].push_back(other_car_id);
+
+    int other_car_s = sensor_fusion[i][5];
+
+    double vx = sensor_fusion[i][3];
+    double vy = sensor_fusion[i][4];
+    double other_car_vel = sqrt(vx*vx + vy*vy);
+
+    // update car position to current state
+    other_car_s += (double)prev_path_size * 0.02 * other_car_vel;
+
+    double diff_in_s = other_car_s - car_s;
+    double diff_abs = fabs(diff_in_s);
+
+    if (diff_abs < distance_to_closest[other_car_lane]) {
+      distance_to_closest[other_car_lane] = diff_abs;
+      car_ids_closest[other_car_lane] = other_car_id;
+    }
+
+    if (diff_in_s < 0.0) {
+      continue;
+    }
+
+    if (diff_in_s < distance_to_closest_ahead[other_car_lane]) {
+      distance_to_closest_ahead[other_car_lane] = diff_in_s;
+      vel_of_closest[other_car_lane] = other_car_vel;
+      car_ids_closest_ahead[other_car_lane] = other_car_id;
+    }
+  }
+
+  pp_sensor_data pp_data;
+
+  pp_data.distance_to_closest = distance_to_closest;
+  pp_data.distance_to_closest_ahead = distance_to_closest_ahead;
+  pp_data.vel_of_closest = vel_of_closest;
+  pp_data.car_ids_closest = car_ids_closest;
+  pp_data.car_ids_closest_ahead = car_ids_closest_ahead;
+  pp_data.car_ids_per_line = car_ids_per_line;
+
+  return pp_data;
 }
 
