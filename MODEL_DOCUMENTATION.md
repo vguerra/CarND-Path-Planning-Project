@@ -69,7 +69,7 @@ All logic of this step is encapsulated in the [`compute_best_lane`](https://gith
 For each lane, a cost is computed. We can express that cost as follows:
 
 <p align="center">
- <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/cost-function.png" width="350">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/cost-function.png" width="650">
 </p>
 
 * Given the current lane the car drives on, we select the possible target lanes. In order to reduce Jerk when producing the car's path in a later step, we only allow the car to change to an adjacent lane, meaning that if the car finds itself on lane 0, it can only move to lane 1.
