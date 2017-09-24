@@ -4,7 +4,6 @@
 * [Rubric](#rubric)
 * [Code](#code)
 * [Path Planning](#pid-controller)
-* [Output Video](#output-video)
 
 ---
 
@@ -32,14 +31,15 @@ The project is organized as follows:
 
 ### Path Planning
 
-Now we are going to describe the process of generating the desired path the car should follow in the simulator. The following diagram gives the bigger picture:
+The Simulator sends messages to the backend containing information about current state of the car and information about other cars on the road. The backend in response, sends back a set of points that represent the path the car shuold follow.
 
+Here we describe the workflow we follow to produce the path the car follows in the simulator.
 
-Now we describe each of the blocks in the diagram:
+First step is:
 
 #### Preprocessing of sensor data.
 
-At each step, the simulator informs us about the state of other vehicules through the captured sensor data. For each of the cars we get the following information: 
+At each step, the simulator informs us about the current state of the car and state of other vehicules through the captured sensor data. For each of the cars we get the following information: 
 
 * car's unique ID
 * car's x position in map coordinates
@@ -51,15 +51,53 @@ At each step, the simulator informs us about the state of other vehicules throug
 
 Using all this data, we extract information that is key to take decision during the generation of the car's path. Mainly, this information is valuable during computation of cost of all possible paths our car could take.
 
-The extraction process computes the following:
+The [extraction process](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/paths.cpp#L52) computes the following information *per lane*:
 
-* For each lane, what's the *absolute distance* to the closest car: Since absolute distance is computed, it can happen that the closest car is ahead or behind of us.
-* For each lane, what's the *distance* to the closest car ahead of us.
-* For each lane, what's the *velocity* of the closest car ahead of us.
-* 
+* The *absolute distance* to the closest car.
+* The *distance* to the closest car ahead of us.
+* The *velocity* of the closest car ahead of us.
+* The car id of the car closest to us.
+* The car id of the closest car ahead of us.
+* All car ids found ( again, per lane ).
 
-#### Preprocessing sensor data
+All this information is then fed to the next step:
 
+#### Choosing best lane possible:
+
+All logic of this step is encapsulated in the [`compute_best_lane`](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L51) function. The general idea is to come up with the lane that minimizes a cost function computed per lane.
+
+For each lane, a cost is computed. We can express that cost as follows:
+
+<p align="center">
+ <img src="github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/cost-funtion.png" width="350">
+</p>
+
+* Given the current lane the car drives on, we select the possible target lanes. In order to reduce Jerk when producing the car's path in a later step, we only allow the car to change to an adjacent lane, meaning that if the car finds itself on lane 0, it can only move to lane 1.
+
+* For each possible lane ( including the current lane ) a cost is computed. This cost represents how *expensive* it would be for the car to drive on that lane. The cost function used is the following:
+
+We explain each of the terms:
+
+##### [Cost of change of lane](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L25):
+Refers to term `CL(l)`. This function penalizes the change of lane. If the target lane happens to be the current lane, then cost is 0.
+
+##### [Cost of closest car](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L31):
+Refers to term `CC(l)`. Penalizes short distances to cars ahead of us. The closer we get to other cars, the higher the cost.
+
+##### [Cost of slowest car](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L37):
+Refers to term `SC(l)`. Penalizes having slow cars ahead. The slower the car ahead of us drives, the higher the cost.
+
+#### [Cost of colission](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L43):
+Refers to term `C(l)`. Binary cost function that penalizes a colission.
+
+Now, the weights that multiply each function are as follow:
+
+* Weight for cost of Change of Lane = 4.
+* Weight for cost of Closest Car = 18.
+* Weight for cost of Slowest Car = 8.
+* Weight for Cost of Colission = 100;
+
+As we can see, Weight for colission is high. If there is a possible colission when car transitions to the target lane, we avoid it. Then, weight for Closest Car cost is a bit more than double the Slowest Car's weights because we want to incentivate lane change if we get too close to a car. Finally, Change of Lane's weight cost is the lowest one of all since it only comes into play when the car is alone on the road to avoid changes of lane when differences between lane costs are small.
 
 ---
 
