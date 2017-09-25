@@ -82,7 +82,7 @@ Refers to term `CL(l)`. This function penalizes the change of lane. If the targe
 Mathematical representation:
 
 <p align="center">
- <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane.png" width="300">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane.png" width="250">
 </p>
 
 where *l* represents the current lane and *l<sub>t</sub>* the target lane.
@@ -108,22 +108,49 @@ If we plot it's behaviour:
  <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/closest-car-graph.png" width="500">
 </p>
 
+We observe that it's maximum value is reached when we are the closest to the next vehicle. As the distance increases, the cost decreases.
 
 ##### [Cost of slowest car](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L37):
 Refers to term `SC(l)`. Penalizes having slow cars ahead. The slower the car ahead of us drives, the higher the cost.
 
-#### [Cost of colission](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L43):
-Refers to term `C(l)`. Binary cost function that penalizes a colission.
+Mathematical representation:
+
+<p align="center">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/slowest-car.png" width="400">
+</p>
+
+If we plot it's behaviour:
+
+<p align="center">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/slowest-car-graph.png" width="500">
+</p>
+
+We observe that it's maximum value is reached when the closest car ahead is driving very slow. As the it's velocity increases, the cost decreases.
+
+#### [Cost of collision](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L43):
+Refers to term `C(l)`. Binary cost function that penalizes a collision.
+
+Mathematical representation:
+
+<p align="center">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/collision.png" width="400">
+</p>
+
+If we plot it's behaviour:
+
+<p align="center">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/collision-graph.png" width="500">
+</p>
+
+If the closest car happens to be within collision distance ( which is defined by the car radius ), then the cost is 1.
 
 Now, the weights that multiply each function are as follow:
 
 * Weight for cost of Change of Lane = 4.
 * Weight for cost of Closest Car = 18.
 * Weight for cost of Slowest Car = 8.
-* Weight for Cost of Colission = 100;
+* Weight for Cost of Collision = 100;
 
-As we can see, Weight for colission is high. If there is a possible colission when car transitions to the target lane, we avoid it. Then, weight for Closest Car cost is a bit more than double the Slowest Car's weights because we want to incentivate lane change if we get too close to a car. Finally, Change of Lane's weight cost is the lowest one of all since it only comes into play when the car is alone on the road to avoid changes of lane when differences between lane costs are small.
+As we can see, Weight for collision is high. If there is a possible collision when car transitions to the target lane, we avoid it. Then, weight for Closest Car cost is a bit more than double the Slowest Car's weights because we want to incentivate lane change if we get too close to a car. Finally, Change of Lane's weight cost is the lowest one of all since it only comes into play when the car is alone on the road, it helps to avoid changes of lane when differences between lane costs are small.
 
 ---
-
-## Output Video
