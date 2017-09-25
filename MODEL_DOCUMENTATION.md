@@ -80,13 +80,13 @@ We explain each of the terms:
 Refers to term `CL(l)`. This function penalizes the change of lane. If the target lane happens to be the current lane, then cost is 0. And can be expressed as follows:
 
 <p align="center">
- <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane.png" width="650">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane.png" width="350">
 </p>
 
 If we plot it's behaviour:
 
 <p align="center">
- <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane-graph.png" width="650">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane-graph.png" width="500">
 </p>
 
 
