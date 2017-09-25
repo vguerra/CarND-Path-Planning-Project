@@ -99,7 +99,7 @@ Refers to term `CC(l)`. Penalizes short distances to cars ahead of us. The close
 Mathematical representation:
 
 <p align="center">
- <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/closest-car.png" width="300">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/closest-car.png" width="400">
 </p>
 
 If we plot it's behaviour:
