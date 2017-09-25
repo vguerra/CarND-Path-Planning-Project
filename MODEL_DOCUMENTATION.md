@@ -66,20 +66,30 @@ All this information is then fed to the next step:
 
 All logic of this step is encapsulated in the [`compute_best_lane`](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L51) function. The general idea is to come up with the lane that minimizes a cost function computed per lane.
 
-For each lane, a cost is computed. We can express that cost as follows:
+* Given the current lane the car drives on, we select the possible target lanes. In order to reduce Jerk when producing the car's path in a later step, we only allow the car to change to an adjacent lane, meaning that if the car finds itself on lane 0, it can only move to lane 1.
+
+* For each possible lane ( including the current lane ) a cost is computed. This cost represents how *expensive* it would be for the car to drive on that lane and it can be mathematically expressed as follows: 
 
 <p align="center">
  <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/cost-function.png" width="650">
 </p>
 
-* Given the current lane the car drives on, we select the possible target lanes. In order to reduce Jerk when producing the car's path in a later step, we only allow the car to change to an adjacent lane, meaning that if the car finds itself on lane 0, it can only move to lane 1.
-
-* For each possible lane ( including the current lane ) a cost is computed. This cost represents how *expensive* it would be for the car to drive on that lane. The cost function used is the following:
-
 We explain each of the terms:
 
 ##### [Cost of change of lane](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L25):
-Refers to term `CL(l)`. This function penalizes the change of lane. If the target lane happens to be the current lane, then cost is 0.
+Refers to term `CL(l)`. This function penalizes the change of lane. If the target lane happens to be the current lane, then cost is 0. And can be expressed as follows:
+
+<p align="center">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane.png" width="650">
+</p>
+
+If we plot it's behaviour:
+
+<p align="center">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane-graph.png" width="650">
+</p>
+
+
 
 ##### [Cost of closest car](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L31):
 Refers to term `CC(l)`. Penalizes short distances to cars ahead of us. The closer we get to other cars, the higher the cost.
