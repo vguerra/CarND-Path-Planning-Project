@@ -77,11 +77,15 @@ All logic of this step is encapsulated in the [`compute_best_lane`](https://gith
 We explain each of the terms:
 
 ##### [Cost of change of lane](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L25):
-Refers to term `CL(l)`. This function penalizes the change of lane. If the target lane happens to be the current lane, then cost is 0. And can be expressed as follows:
+Refers to term `CL(l)`. This function penalizes the change of lane. If the target lane happens to be the current lane, then cost is 0. 
+
+Mathematical representation:
 
 <p align="center">
- <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane.png" width="350">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane.png" width="300">
 </p>
+
+where *l* represents the current lane and *l<sub>t</sub>* the target lane.
 
 If we plot it's behaviour:
 
@@ -89,10 +93,21 @@ If we plot it's behaviour:
  <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane-graph.png" width="500">
 </p>
 
-
-
 ##### [Cost of closest car](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L31):
 Refers to term `CC(l)`. Penalizes short distances to cars ahead of us. The closer we get to other cars, the higher the cost.
+
+Mathematical representation:
+
+<p align="center">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/closests-car.png" width="300">
+</p>
+
+If we plot it's behaviour:
+
+<p align="center">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/closest-car-graph.png" width="500">
+</p>
+
 
 ##### [Cost of slowest car](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L37):
 Refers to term `SC(l)`. Penalizes having slow cars ahead. The slower the car ahead of us drives, the higher the cost.
