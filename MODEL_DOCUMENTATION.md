@@ -133,7 +133,7 @@ Refers to term `C(l)`. Binary cost function that penalizes a collision.
 Mathematical representation:
 
 <p align="center">
- <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/collision.png" width="400">
+ <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/collision.png" width="500">
 </p>
 
 If we plot it's behaviour:
