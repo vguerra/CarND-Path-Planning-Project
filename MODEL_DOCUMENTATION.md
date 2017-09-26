@@ -153,4 +153,31 @@ Now, the weights that multiply each function are as follow:
 
 As we can see, Weight for collision is high. If there is a possible collision when car transitions to the target lane, we avoid it. Then, weight for Closest Car cost is a bit more than double the Slowest Car's weights because we want to incentivate lane change if we get too close to a car. Finally, Change of Lane's weight cost is the lowest one of all since it only comes into play when the car is alone on the road, it helps to avoid changes of lane when differences between lane costs are small.
 
----
+Once we selected the best lane ( in terms of cost). We proceed to the next step:
+
+#### Checking feasibility:
+
+This is implemeted by the function [`lane_change_is_feaseble`](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/paths.cpp#L9). The main factor to define feasibility is if in the future there could be a collision or not. The logic is quite simple:
+
+* If lane chossen by previous step happens to be the same, then we are done. We keep driving on the same lane.
+* If we change lane but there are no cars in the other lane, we can safely change lanes.
+* Otherwise, we take into account all cars found in the lane we will change to, we predict their paths in some time in the future and we [check for possible collisions](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/paths.cpp#L24-L49). If none are found, the change is feasible. Otherwise we keep our current lane.
+
+Now that feasibility has been checked, we proceed to see if we hove to slow down or accelerate:
+
+#### [Slowing down or accelerate](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/main.cpp#L129-L147):
+
+For this step, we take into account the information about the closest car ahead of us. We check if the distance to the closest is safe, e.g., if it is bigger than a given buffer ( safe distance ).
+
+If the car is getting too close, we need to slow down, so we proceed to decrees velocity. On the contrary, if we haven't reached the speed limit, we can accelerate.
+
+The final step is to generate the points that define the car's path.
+
+#### Path generation
+
+In order to generate the path we are going to use a Spline using 5 key points:
+
+* [2 of them](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/main.cpp#L159-L188) are taking from the previous path that has not yet been consumed by the simulator.
+* and [last 3 are way points](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/main.cpp#L190-L196) found on the lane we chose previously. The separation between them is of 30 mts.
+
+We form the spline with all 5 points and proceed to [generate future points from it](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/main.cpp#L207-L245). On each iteration, we send a path containing 30 points to the simulator. In this phase, we add all points the simulator has not used, and fill the rest of the points, using the spline, until we reach 30 again.
