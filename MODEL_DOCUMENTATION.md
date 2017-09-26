@@ -9,7 +9,7 @@
 
 ## The Goal
 
-In this project, your goal is to design a path planner that is able to create smooth, safe paths for the car to follow along a 3 lane highway with traffic. A successful path planner will be able to keep inside its lane, avoid hitting other cars, and pass slower moving traffic all by using localization, sensor fusion, and map data.
+In this project, the goal is to design a path planner that is able to create smooth, safe paths for the car to follow along a 3 lane highway with traffic. A successful path planner will be able to keep inside its lane, avoid hitting other cars, and pass slower moving traffic all by using localization, sensor fusion, and map data.
 
 ---
 
@@ -22,7 +22,7 @@ Here I will consider the rubric points individually and describe how I addressed
 
 The project is organized as follows:
 * [`data`](https://github.com/vguerra/CarND-Path-Planning-Project/tree/master/data): Folder containing map data. 
-* [`src`](https://github.com/vguerra/CarND-Path-Planning-Project/tree/master/src): Folder containing all source code of the project. Containing:
+* [`src`](https://github.com/vguerra/CarND-Path-Planning-Project/tree/master/src): Folder containing all source code of the project:
     - `main.cpp`: Main workflow of comunication between path planning generator and simulator.
     - `helpers.cpp`: A set of helper functions.
     - `cost-functions.cpp`: All supported cost functions and logic that computes best lane based on costs.
@@ -64,15 +64,17 @@ All this information is then fed to the next step:
 
 #### Choosing best lane possible:
 
-All logic of this step is encapsulated in the [`compute_best_lane`](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L51) function. The general idea is to come up with the lane that minimizes a cost function computed per lane.
+All logic of this step is encapsulated in the [`compute_best_lane`](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L51) function. The general idea is to come up with the lane that minimizes a cost function computed per possible target lane.
 
 * Given the current lane the car drives on, we select the possible target lanes. In order to reduce Jerk when producing the car's path in a later step, we only allow the car to change to an adjacent lane, meaning that if the car finds itself on lane 0, it can only move to lane 1.
 
-* For each possible lane ( including the current lane ) a cost is computed. This cost represents how *expensive* it would be for the car to drive on that lane and it can be mathematically expressed as follows: 
+* For each possible lane ( including the current lane ) a cost is computed. This cost represents how *expensive* it would be for the car to drive on that lane. It can be mathematically expressed as follows: 
 
 <p align="center">
  <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/cost-function.png" width="650">
 </p>
+
+Ultimately, the problem can be described as: Find the lane that minimizes the cost function above.
 
 We explain each of the terms:
 
@@ -92,6 +94,8 @@ If we plot it's behaviour:
 <p align="center">
  <img src="https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/images/change-of-lane-graph.png" width="500">
 </p>
+
+we observe how the cost increases exponentially as the number of lanes we need to change increases. For this case, we could change up to 2 lanes which would yield a cost of 4.
 
 ##### [Cost of closest car](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/cost-functions.cpp#L31):
 Refers to term `CC(l)`. Penalizes short distances to cars ahead of us. The closer we get to other cars, the higher the cost.
@@ -159,15 +163,15 @@ Once we selected the best lane ( in terms of cost). We proceed to the next step:
 
 This is implemeted by the function [`lane_change_is_feaseble`](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/paths.cpp#L9). The main factor to define feasibility is if in the future there could be a collision or not. The logic is quite simple:
 
-* If lane chossen by previous step happens to be the same, then we are done. We keep driving on the same lane.
-* If we change lane but there are no cars in the other lane, we can safely change lanes.
+* If lane chosen by previous step happens to be the same as the current lane, then we are done. We keep driving on the same lane.
+* If we changed lane but there are no cars on the new lane, we can safely change.
 * Otherwise, we take into account all cars found in the lane we will change to, we predict their paths in some time in the future and we [check for possible collisions](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/paths.cpp#L24-L49). If none are found, the change is feasible. Otherwise we keep our current lane.
 
-Now that feasibility has been checked, we proceed to see if we hove to slow down or accelerate:
+Now that feasibility has been checked, we proceed to see if we have to slow down or accelerate:
 
-#### [Slowing down or accelerate](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/main.cpp#L129-L147):
+#### [To Slow down or to Accelerate](https://github.com/vguerra/CarND-Path-Planning-Project/blob/master/src/main.cpp#L129-L147):
 
-For this step, we take into account the information about the closest car ahead of us. We check if the distance to the closest is safe, e.g., if it is bigger than a given buffer ( safe distance ).
+For this step, we take into account the information about the closest car ahead of us. We check if the distance to the closest car is safe, e.g., if it is bigger than a given buffer ( safe distance ).
 
 If the car is getting too close, we need to slow down, so we proceed to decrees velocity. On the contrary, if we haven't reached the speed limit, we can accelerate.
 
