@@ -144,7 +144,7 @@ If we plot it's behaviour:
 
 If the closest car happens to be within collision distance ( which is defined by the car radius ), then the cost is 1.
 
-Now, the weights that multiply each function are as follow:
+Now, the weights that multiply each function are as follows:
 
 * Weight for cost of Change of Lane = 4.
 * Weight for cost of Closest Car = 18.
